@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="vi" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tín hiệu Binance Futures</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        mexc: {
+                            bg: '#0b0e14',
+                            card: '#151924',
+                            border: '#232838',
+                            hover: '#1e2436',
+                            primary: '#00b897',
+                            primaryDark: '#008f75',
+                            accent: '#2962ff',
+                            bull: '#0ECB81',
+                            bear: '#F6465D',
+                            muted: '#848E9C'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- html2canvas for Image Export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #0b0e14; color: #EAECEF; }
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar-track { background: #151924; }
+        ::-webkit-scrollbar-thumb { background: #232838; border-radius: 4px; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col bg-mexc-bg text-gray-200 text-xs sm:text-sm">
+
+    <!-- Header -->
+    <header class="bg-mexc-card border-b border-mexc-border sticky top-0 z-30 px-3 py-2.5 sm:px-4 sm:py-3 shadow-md">
+        <div class="max-w-7xl mx-auto flex flex-col lg:flex-row justify-between items-center gap-2.5 sm:gap-3">
+            <div class="flex items-center justify-between w-full lg:w-auto">
+                <div class="flex items-center gap-2.5">
+                    <div class="bg-mexc-primary/20 p-2 rounded-lg text-mexc-primary border border-mexc-primary/30 shrink-0">
+                        <i class="fa-solid fa-chart-line text-xl sm:text-2xl"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-base sm:text-xl font-bold tracking-wide flex items-center gap-1.5 flex-wrap">
+                            <span>Tín hiệu Binance Futures</span>
+                        </h1>
+                    </div>
+                </div>
+                <!-- Status Dot Mobile -->
+                <div id="scanStatusBadgeMobile" class="flex sm:hidden items-center gap-1.5 px-2 py-1 rounded-lg bg-mexc-hover border border-mexc-border text-[11px]">
+                    <span id="scanStatusDotMobile" class="w-2 h-2 rounded-full bg-yellow-500"></span>
+                </div>
+            </div>
+
+            <!-- Dedicated Scan Buttons -->
+            <div class="w-full lg:w-auto space-y-2">
+                <div id="scanStatusBadge" class="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-mexc-hover border border-mexc-border text-xs mb-1">
+                    <span id="scanStatusDot" class="w-2.5 h-2.5 rounded-full bg-yellow-500"></span>
+                    <span id="scanStatusText" class="text-mexc-muted font-medium">Sẵn sàng...</span>
+                </div>
+                <div class="grid grid-cols-3 sm:flex sm:flex-wrap items-center gap-1.5 sm:gap-2 w-full justify-end">
+                    <button id="btnScan1H" onclick="startScan('1H')" class="w-full sm:w-auto px-2.5 py-2 bg-sky-600 hover:bg-sky-500 text-white font-bold rounded-lg transition-all text-xs flex items-center justify-center gap-1 shadow-md shadow-sky-600/20 active:scale-95">
+                        <i class="fa-solid fa-play text-[10px]"></i> 1H
+                    </button>
+                    <button id="btnScan4H" onclick="startScan('4H')" class="w-full sm:w-auto px-2.5 py-2 bg-amber-600 hover:bg-amber-500 text-white font-bold rounded-lg transition-all text-xs flex items-center justify-center gap-1 shadow-md shadow-amber-600/20 active:scale-95">
+                        <i class="fa-solid fa-play text-[10px]"></i> 4H
+                    </button>
+                    <button id="btnScan1D" onclick="startScan('1D')" class="w-full sm:w-auto px-2.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg transition-all text-xs flex items-center justify-center gap-1 shadow-md shadow-emerald-600/20 active:scale-95">
+                        <i class="fa-solid fa-play text-[10px]"></i> 1D
+                    </button>
+                    <button id="btnStopScan" onclick="stopScan()" class="hidden col-span-3 sm:w-auto px-3 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 font-semibold rounded-lg transition text-xs flex items-center justify-center gap-1.5">
+                        <i class="fa-solid fa-xmark"></i> Dừng Quét
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-1 max-w-7xl w-full mx-auto p-2.5 sm:p-4 space-y-3 sm:space-y-4">
+        <!-- Progress Bar -->
+        <div id="progressContainer" class="bg-mexc-card border border-mexc-border p-3 sm:p-4 rounded-xl shadow-lg">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-1.5 mb-2 text-xs">
+                <div class="flex items-center gap-2">
+                    <span class="font-bold text-xs sm:text-sm text-white flex items-center gap-2">
+                        <i class="fa-solid fa-spinner fa-spin text-mexc-primary"></i>
+                        <span id="progressTitle">Tiến trình Realtime</span>
+                    </span>
+                    <span id="progressText" class="text-mexc-muted font-mono text-[11px] sm:text-xs">0 / 0 cặp</span>
+                </div>
+                <div class="text-mexc-muted text-[11px]">
+                    Tốc độ: <b class="text-white font-mono" id="statSpeed">0</b> cặp/s
+                </div>
+            </div>
+            <div class="w-full bg-mexc-bg h-2 rounded-full overflow-hidden border border-mexc-border">
+                <div id="progressBar" class="bg-gradient-to-r from-mexc-primary via-teal-400 to-blue-500 h-full w-0 transition-all duration-200"></div>
+            </div>
+        </div>
+
+        <!-- Stats Cards Grid -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
+            <div class="bg-mexc-card border border-mexc-border p-2.5 sm:p-3.5 rounded-xl">
+                <div class="text-[11px] sm:text-xs text-mexc-muted mb-0.5">Tổng Cặp</div>
+                <div class="text-lg sm:text-xl font-bold" id="statTotalPairs">0</div>
+            </div>
+            <div class="bg-mexc-card border border-mexc-border p-2.5 sm:p-3.5 rounded-xl">
+                <div class="text-[11px] sm:text-xs text-mexc-muted mb-0.5">Đã phân tích</div>
+                <div class="text-lg sm:text-xl font-bold" id="statScanned">0</div>
+            </div>
+            <div class="bg-mexc-card border border-mexc-border p-2.5 sm:p-3.5 rounded-xl">
+                <div class="text-[11px] sm:text-xs text-mexc-muted mb-0.5">Số Cặp Thỏa Mãn</div>
+                <div class="text-lg sm:text-xl font-bold text-emerald-400" id="statFoundTotal">0</div>
+            </div>
+            <div class="bg-mexc-card border border-mexc-border p-2.5 sm:p-3.5 rounded-xl">
+                <div class="text-[11px] sm:text-xs text-mexc-muted mb-0.5">Khung Đang Quét</div>
+                <div class="text-lg sm:text-xl font-bold text-amber-400" id="statActiveTf">-</div>
+            </div>
+        </div>
+
+        <!-- Filters Controls -->
+        <div class="bg-mexc-card border border-mexc-border rounded-xl p-3 sm:p-4 shadow-sm space-y-3">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3 text-xs">
+                <div class="space-y-1">
+                    <label class="text-emerald-400 font-bold block">Khoảng Cách Nến Tín Hiệu:</label>
+                    <select id="filterMaxCandlesAgo" onchange="applyFiltersAndRender()" class="w-full bg-mexc-bg border border-emerald-500/40 rounded-lg p-2 font-semibold text-white outline-none text-xs">
+                        <option value="0">⚡ Đúng 0 nến (Mới tạo tín hiệu)</option>
+                        <option value="1" selected>⚡ Trong vòng ≤ 1 nến - Mặc định</option>
+                        <option value="3">Trong vòng ≤ 3 nến</option>
+                        <option value="5">Trong vòng ≤ 5 nến</option>
+                        <option value="10">Trong vòng ≤ 10 nến</option>
+                    </select>
+                </div>
+                <div class="space-y-1">
+                    <label class="text-mexc-muted font-medium block">Sắp xếp theo:</label>
+                    <select id="sortOption" onchange="applyFiltersAndRender()" class="w-full bg-mexc-bg border border-mexc-border rounded-lg p-2 text-white font-semibold outline-none text-xs">
+                        <option value="recency" selected>⚡ Tín hiệu mới nhất</option>
+                        <option value="volDesc">💰 Volume 24h (Thanh khoản)</option>
+                        <option value="changeDesc">🚀 Biến động 24h (% Tăng)</option>
+                    </select>
+                </div>
+                <div class="space-y-1">
+                    <label class="text-mexc-muted font-medium block">Hiển thị:</label>
+                    <select id="filterViewMode" onchange="applyFiltersAndRender()" class="w-full bg-mexc-bg border border-mexc-border rounded-lg p-2 text-white outline-none text-xs">
+                        <option value="MATCHED_ONLY" selected>Chỉ các cặp THỎA MÔ HÌNH</option>
+                    </select>
+                </div>
+                <div class="space-y-1">
+                    <label class="text-mexc-muted font-medium block">Tìm kiếm Coin:</label>
+                    <input type="text" id="searchSymbol" oninput="applyFiltersAndRender()" placeholder="BTC, ETH, SOL..." class="w-full bg-mexc-bg border border-mexc-border rounded-lg p-2 uppercase font-semibold outline-none text-xs">
+                </div>
+            </div>
+        </div>
+
+        <!-- History Section -->
+        <div id="historyContainer" class="hidden bg-mexc-card border border-mexc-border rounded-xl p-3 sm:p-4 shadow-sm mb-3">
+            <div class="flex justify-between items-center mb-2.5">
+                <h4 class="text-white font-bold text-xs flex items-center gap-1.5"><i class="fa-solid fa-clock-rotate-left text-mexc-primary"></i> Lịch sử quét đã lưu (3 lần gần nhất):</h4>
+                <button onclick="clearHistory()" class="text-[10px] text-red-400 hover:text-red-300 transition-colors bg-red-500/10 px-2 py-1 rounded"><i class="fa-solid fa-trash mr-1"></i> Xóa</button>
+            </div>
+            <div id="historyButtons" class="flex flex-wrap gap-2"></div>
+        </div>
+
+        <!-- Table Section -->
+        <div id="tableSection" class="bg-mexc-card border border-mexc-border rounded-xl overflow-hidden shadow-lg relative p-1 pb-0">
+            <!-- Header Bảng -->
+            <div class="p-3 sm:p-4 border-b border-mexc-border flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                <h3 class="font-bold text-sm sm:text-base line-clamp-1" id="tableTitle">Kết Quả Quét Futures</h3>
+                <div class="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
+                    <span id="resultCountBadge" class="bg-mexc-border text-mexc-muted text-[11px] sm:text-xs px-2 py-1 rounded-full font-mono shrink-0">0 kết quả</span>
+                    <button onclick="shareAsImage()" class="px-3 py-1.5 bg-purple-600 hover:bg-purple-500 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all shadow-md active:scale-95" id="btnShareImg">
+                        <i class="fa-solid fa-camera"></i> <span>Chia sẻ Ảnh</span>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Vùng bảng dữ liệu -->
+            <div class="overflow-x-auto bg-mexc-card">
+                <table class="w-full text-left border-collapse min-w-[600px] sm:min-w-full">
+                    <thead>
+                        <tr class="bg-mexc-bg/60 text-mexc-muted text-[11px] sm:text-xs uppercase border-b border-mexc-border whitespace-nowrap">
+                            <th class="py-2.5 px-3 sm:py-3 sm:px-4">Cặp Tiền</th>
+                            <th class="py-2.5 px-3 sm:py-3 sm:px-4">Giá Live</th>
+                            <th class="py-2.5 px-3 sm:py-3 sm:px-4">24h %</th>
+                            <th class="py-2.5 px-3 sm:py-3 sm:px-4 text-center" id="colHeaderTf">Khung Tín Hiệu</th>
+                            <th class="py-2.5 px-3 sm:py-3 sm:px-4 text-right">Volume 24h</th>
+                            <th class="py-2.5 px-3 sm:py-3 sm:px-4 text-center hide-on-capture">Xem Chart</th>
+                        </tr>
+                    </thead>
+                    <tbody id="scannerTableBody" class="divide-y divide-mexc-border/50 text-xs sm:text-sm">
+                        <tr>
+                            <td colspan="6" class="py-10 text-center text-mexc-muted">Chưa chọn khung quét. Vui lòng bấm một trong các nút khung thời gian ở phía trên.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <!-- Chữ ký in chìm trong ảnh (chỉ hiện khi chụp) -->
+            <div id="watermark" class="hidden text-center py-2 text-mexc-muted text-[10px] bg-mexc-card border-t border-mexc-border">
+                Generated by Binance Futures Signal Scanner
+            </div>
+        </div>
+    </main>
+
+    <script>
+        let allSymbols = [];
+        let scanResults = [];
+        let filteredResults = [];
+        let isScanning = false;
+        let shouldStopScan = false;
+        let currentScannedTf = '';
+        
+        let scanHistory = JSON.parse(localStorage.getItem('macdScanHistory')) || [];
+
+        window.addEventListener('DOMContentLoaded', () => {
+            loadSymbols();
+            renderHistoryButtons();
+        });
+
+        // 1. Lấy danh sách cặp tiền Binance Futures
+        async function loadSymbols() {
+            updateScanStatus('loading', 'Đang nạp hợp đồng Binance...');
+            try {
+                let res = await fetch('https://fapi.binance.com/fapi/v1/exchangeInfo');
+                let data = await res.json();
+                if (data && data.symbols) {
+                    allSymbols = data.symbols
+                        .filter(item => item.quoteAsset === 'USDT' && item.status === 'TRADING' && item.contractType === 'PERPETUAL')
+                        .map(item => item.symbol);
+
+                    document.getElementById('statTotalPairs').innerText = allSymbols.length;
+                    updateScanStatus('ready', `Sẵn sàng (${allSymbols.length} cặp)`);
+                }
+            } catch (e) {
+                updateScanStatus('ready', 'Lỗi kết nối API Binance');
+            }
+        }
+
+        function updateScanStatus(state, msg) {
+            document.getElementById('scanStatusBadge').classList.remove('hidden');
+            document.getElementById('scanStatusText').innerText = msg;
+            document.getElementById('scanStatusDot').className = `w-2.5 h-2.5 rounded-full ${state === 'loading' ? 'bg-yellow-500' : 'bg-emerald-500'}`;
+            
+            let dotMobile = document.getElementById('scanStatusDotMobile');
+            if (dotMobile) dotMobile.className = `w-2 h-2 rounded-full ${state === 'loading' ? 'bg-yellow-500' : 'bg-emerald-500'}`;
+        }
+
+        function stopScan() {
+            shouldStopScan = true;
+            isScanning = false;
+            document.getElementById('btnStopScan').classList.add('hidden');
+            updateScanStatus('ready', 'Đã dừng');
+        }
+
+        // 2. Bắt đầu Quét dữ liệu từ Binance Futures
+        async function startScan(tf) {
+            if (allSymbols.length === 0) await loadSymbols();
+            if (isScanning) return;
+
+            isScanning = true;
+            shouldStopScan = false;
+            scanResults = [];
+            currentScannedTf = tf;
+
+            document.getElementById('btnStopScan').classList.remove('hidden');
+            document.getElementById('statActiveTf').innerText = tf;
+            document.getElementById('tableTitle').innerText = `Kết Quả Quét Khung ${tf}`;
+            document.getElementById('colHeaderTf').innerText = `Trạng Thái Khung ${tf}`;
+            updateScanStatus('scanning', `Đang quét khung ${tf}...`);
+
+            let scanned = 0, foundCount = 0;
+            let startTime = Date.now();
+
+            let intervalParam = '1h'; // 1H
+            if (tf === '4H') intervalParam = '4h';
+            if (tf === '1D') intervalParam = '1d';
+
+            for (let i = 0; i < allSymbols.length; i++) {
+                if (shouldStopScan) break;
+                let symbol = allSymbols[i];
+
+                try {
+                    let [tickerRes, klineRes] = await Promise.all([
+                        fetch(`https://fapi.binance.com/fapi/v1/ticker/24hr?symbol=${symbol}`).then(r => r.json()).catch(() => null),
+                        fetch(`https://fapi.binance.com/fapi/v1/klines?symbol=${symbol}&interval=${intervalParam}&limit=1000`).then(r => r.json()).catch(() => null),
+                    ]);
+
+                    let tItem = tickerRes || null;
+                    let price = tItem ? parseFloat(tItem.lastPrice || 0) : 0;
+                    let change = tItem ? parseFloat(tItem.priceChangePercent || 0) : 0;
+                    let vol = tItem ? parseFloat(tItem.quoteVolume || 0) : 0;
+
+                    let maxAgoSetting = parseInt(document.getElementById('filterMaxCandlesAgo').value);
+                    if (isNaN(maxAgoSetting)) maxAgoSetting = 1;
+
+                    let res = checkStrictDivergence(klineRes, maxAgoSetting);
+
+                    if (res.found) {
+                        foundCount++;
+                        scanResults.push({
+                            symbol: symbol,
+                            rawSymbol: symbol,
+                            price: price,
+                            change: change,
+                            vol: vol,
+                            tf: tf,
+                            candlesAgo: res.candlesAgo
+                        });
+                    }
+                } catch (err) {}
+
+                scanned++;
+                document.getElementById('statScanned').innerText = scanned;
+                document.getElementById('statFoundTotal').innerText = foundCount;
+                document.getElementById('progressText').innerText = `${scanned} / ${allSymbols.length}`;
+                document.getElementById('progressBar').style.width = `${Math.round((scanned / allSymbols.length) * 100)}%`;
+                
+                let elapsed = (Date.now() - startTime) / 1000;
+                document.getElementById('statSpeed').innerText = (scanned / Math.max(1, elapsed)).toFixed(1);
+
+                applyFiltersAndRender();
+                await new Promise(r => setTimeout(r, 10));
+            }
+
+            isScanning = false;
+            document.getElementById('btnStopScan').classList.add('hidden');
+            updateScanStatus('ready', `Đã quét xong ${tf}!`);
+            
+            if (!shouldStopScan && scanResults.length >= 0) {
+                saveToHistory(tf, scanResults);
+            }
+        }
+
+        function saveToHistory(tf, results) {
+            let now = new Date();
+            let timestamp = now.toLocaleTimeString('vi-VN') + ' - ' + now.toLocaleDateString('vi-VN');
+            scanHistory.push({
+                id: Date.now(),
+                tf: tf,
+                time: timestamp,
+                results: JSON.parse(JSON.stringify(results))
+            });
+            
+            if (scanHistory.length > 3) {
+                scanHistory.shift();
+            }
+            
+            localStorage.setItem('macdScanHistory', JSON.stringify(scanHistory));
+            renderHistoryButtons();
+        }
+
+        function renderHistoryButtons() {
+            let container = document.getElementById('historyContainer');
+            let btnsDiv = document.getElementById('historyButtons');
+            
+            if (scanHistory.length === 0) {
+                container.classList.add('hidden');
+                return;
+            }
+            container.classList.remove('hidden');
+            btnsDiv.innerHTML = '';
+            
+            let reversed = [...scanHistory].reverse();
+            reversed.forEach((hist) => {
+                let btn = document.createElement('button');
+                btn.className = "px-3 py-1.5 bg-mexc-bg border border-mexc-border hover:border-mexc-primary text-xs rounded-lg transition-all text-gray-300 flex items-center shadow-sm";
+                btn.innerHTML = `<i class="fa-solid fa-clock text-mexc-primary mr-1.5"></i>Khung ${hist.tf} (${hist.time}) - <b class="ml-1 text-emerald-400">${hist.results.length} mã</b>`;
+                btn.onclick = () => loadHistory(hist.id);
+                btnsDiv.appendChild(btn);
+            });
+        }
+
+        function loadHistory(id) {
+            let hist = scanHistory.find(h => h.id === id);
+            if (!hist) return;
+            scanResults = hist.results;
+            currentScannedTf = hist.tf;
+            document.getElementById('statActiveTf').innerText = hist.tf + ' (Lịch sử)';
+            document.getElementById('tableTitle').innerText = `Lịch sử: Khung ${hist.tf} lúc ${hist.time}`;
+            applyFiltersAndRender();
+        }
+
+        function clearHistory() {
+            if(confirm('Bạn có chắc chắn muốn xóa toàn bộ lịch sử quét đã lưu?')) {
+                scanHistory = [];
+                localStorage.removeItem('macdScanHistory');
+                renderHistoryButtons();
+                
+                scanResults = [];
+                filteredResults = [];
+                document.getElementById('tableTitle').innerText = `Kết Quả Quét Futures`;
+                document.getElementById('statActiveTf').innerText = `-`;
+                document.getElementById('resultCountBadge').innerText = `0 kết quả`;
+                document.getElementById('scannerTableBody').innerHTML = `<tr><td colspan="6" class="py-10 text-center text-mexc-muted">Chưa chọn khung quét. Vui lòng bấm một trong các nút khung thời gian ở phía trên.</td></tr>`;
+            }
+        }
+
+        async function shareAsImage() {
+            let btnShare = document.getElementById('btnShareImg');
+            let originalText = btnShare.innerHTML;
+            btnShare.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Đang tạo ảnh...`;
+            
+            let tableNode = document.getElementById('tableSection');
+            let watermark = document.getElementById('watermark');
+            
+            btnShare.classList.add('hidden');
+            watermark.classList.remove('hidden');
+            let hideElements = document.querySelectorAll('.hide-on-capture');
+            hideElements.forEach(el => el.classList.add('hidden'));
+
+            try {
+                let canvas = await html2canvas(tableNode, {
+                    backgroundColor: '#151924',
+                    scale: 2,
+                    useCORS: true,
+                    logging: false
+                });
+
+                canvas.toBlob(async function(blob) {
+                    let filename = `Binance_TinHieu_${currentScannedTf}_${new Date().getTime()}.png`;
+                    let file = new File([blob], filename, { type: 'image/png' });
+                    
+                    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                        try {
+                            await navigator.share({
+                                title: 'Kết Quả Tín Hiệu Binance Futures',
+                                files: [file]
+                            });
+                        } catch (err) {
+                            downloadFile(url, filename);
+                        }
+                    } else {
+                        let url = URL.createObjectURL(blob);
+                        downloadFile(url, filename);
+                        setTimeout(() => URL.revokeObjectURL(url), 1000);
+                    }
+                    
+                    restoreUI(btnShare, originalText, watermark, hideElements);
+                });
+            } catch(e) {
+                alert("Có lỗi xảy ra khi tạo ảnh.");
+                restoreUI(btnShare, originalText, watermark, hideElements);
+            }
+        }
+
+        function downloadFile(url, filename) {
+            let a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            a.click();
+        }
+
+        function restoreUI(btn, text, watermark, hideElements) {
+            btn.classList.remove('hidden');
+            btn.innerHTML = text;
+            watermark.classList.add('hidden');
+            hideElements.forEach(el => el.classList.remove('hidden'));
+        }
+
+        // 3. Logic Phân Tích Phân Kỳ (Binance Futures)
+        function checkStrictDivergence(klineRes, maxAgo) {
+            if (!klineRes || !Array.isArray(klineRes) || klineRes.length < 150) return { found: false };
+
+            let closes = klineRes.map(item => parseFloat(item[4]));
+            let lows = klineRes.map(item => parseFloat(item[3]));
+
+            let { macdLine, signalLine } = computeMACD(closes);
+            let n = closes.length;
+
+            const maxBars = 150;
+            const minBarsBetween = 8;
+            const minSpreadPct = 13.0;
+            const hsMaxDiffPct = 30.0;
+            const allowStd_Bot = true;
+            const allowHS_Bot = true;
+            const requireBelowZero = true;
+            const strictBelowZero = true;
+            const reqMacdDivBot = true;
+            const reqPriceDivBot = true;
+
+            let lastCrossAboveZeroBar = null;
+
+            let currentTroughVal = null;
+            let currentTroughBar = null;
+            let currentTroughPrice = null;
+            let maxSpreadTrough = 0.0;
+            let inTrough = false;
+
+            let b1_val = null, b1_bar = null, b1_price = null;
+            let b2_val = null, b2_bar = null, b2_price = null;
+            let b3_val = null, b3_bar = null, b3_price = null;
+
+            let lastSignalAgo = -1;
+            const WARMUP_BARS = 50;
+
+            for (let bar = 0; bar < n; bar++) {
+                let macd = macdLine[bar];
+                let signal = signalLine[bar];
+                let low = lows[bar];
+
+                if (macd > 0) lastCrossAboveZeroBar = bar;
+                if (bar < 1) continue;
+
+                let prevMacd = macdLine[bar - 1];
+                let prevSignal = signalLine[bar - 1];
+
+                let crossUnderSig = (prevMacd >= prevSignal) && (macd < signal);
+                let crossOverSig  = (prevMacd <= prevSignal) && (macd > signal);
+
+                if (crossUnderSig) {
+                    inTrough = true;
+                    currentTroughVal = macd;
+                    currentTroughBar = bar;
+                    currentTroughPrice = low;
+                    maxSpreadTrough = 0.0;
+                }
+
+                if (macd < signal) {
+                    if (inTrough) {
+                        if (currentTroughVal === null || macd < currentTroughVal) {
+                            currentTroughVal = macd;
+                            currentTroughBar = bar;
+                        }
+                        if (currentTroughPrice === null || low < currentTroughPrice) {
+                            currentTroughPrice = low;
+                        }
+
+                        let spread = macd !== 0 ? (Math.abs(macd - signal) / Math.abs(macd)) * 100 : 0;
+                        if (spread > maxSpreadTrough) {
+                            maxSpreadTrough = spread;
+                        }
+                    }
+                }
+
+                if (crossOverSig) {
+                    if (inTrough && maxSpreadTrough >= minSpreadPct) {
+                        if (bar >= WARMUP_BARS) {
+                            b3_val = b2_val; b3_bar = b2_bar; b3_price = b2_price;
+                            b2_val = b1_val; b2_bar = b1_bar; b2_price = b1_price;
+                            b1_val = currentTroughVal; b1_bar = currentTroughBar; b1_price = currentTroughPrice;
+
+                            if (b3_val !== null) {
+                                let cond_maxDist = (bar - b3_bar) <= maxBars;
+                                let cond_minDist = (b1_bar - b2_bar >= minBarsBetween) && (b2_bar - b3_bar >= minBarsBetween);
+                                let cond_belowZero = requireBelowZero ? (b1_val < 0 && b2_val < 0 && b3_val < 0) : true;
+                                let cond_noCrossZ = strictBelowZero ? (lastCrossAboveZeroBar === null || lastCrossAboveZeroBar < b3_bar) : true;
+
+                                let hs_diff_bot = b3_val !== 0 ? (Math.abs(b1_val - b3_val) / Math.abs(b3_val)) * 100 : 999.0;
+                                let cond_hs_shoulders_bot = hs_diff_bot <= hsMaxDiffPct;
+
+                                let macd_Standard = allowStd_Bot && (b1_val > b2_val && b2_val > b3_val);
+                                let macd_HS = allowHS_Bot && (b2_val < b3_val && b2_val < b1_val) && cond_hs_shoulders_bot;
+                                let cond_macdDivBot = reqMacdDivBot ? (macd_Standard || macd_HS) : true;
+
+                                let cond_priceDivBot = reqPriceDivBot ? (b1_price <= b2_price && b2_price <= b3_price) : true;
+
+                                if (cond_maxDist && cond_minDist && cond_belowZero && cond_macdDivBot && cond_priceDivBot && cond_noCrossZ) {
+                                    lastSignalAgo = (n - 1) - bar;
+                                    b3_val = null;
+                                }
+                            }
+                        }
+                    }
+                    inTrough = false;
+                }
+            }
+
+            if (lastSignalAgo >= 0 && lastSignalAgo <= maxAgo) {
+                return { found: true, candlesAgo: lastSignalAgo };
+            }
+
+            return { found: false };
+        }
+
+        function computeMACD(closes) {
+            let ema12 = calcEMA(closes, 12);
+            let ema26 = calcEMA(closes, 26);
+            let macdLine = new Array(closes.length);
+            for (let i = 0; i < closes.length; i++) {
+                macdLine[i] = ema12[i] - ema26[i];
+            }
+            let signalLine = calcEMA(macdLine, 9);
+            return { macdLine, signalLine };
+        }
+
+        function calcEMA(data, period) {
+            let k = 2 / (period + 1);
+            let ema = new Array(data.length);
+            ema[0] = data[0];
+            for (let i = 1; i < data.length; i++) { 
+                ema[i] = data[i] * k + ema[i - 1] * (1 - k); 
+            }
+            return ema;
+        }
+
+        function applyFiltersAndRender() {
+            let keyword = document.getElementById('searchSymbol').value.trim().toUpperCase();
+            let sortOption = document.getElementById('sortOption').value;
+            let maxAgoSetting = parseInt(document.getElementById('filterMaxCandlesAgo').value);
+            if (isNaN(maxAgoSetting)) maxAgoSetting = 1;
+
+            filteredResults = scanResults.filter(item => {
+                if (item.candlesAgo > maxAgoSetting) return false;
+                if (keyword && !item.symbol.includes(keyword)) return false;
+                return true;
+            });
+
+            filteredResults.sort((a, b) => {
+                if (sortOption === 'recency') {
+                    return a.candlesAgo - b.candlesAgo;
+                } else if (sortOption === 'volDesc') {
+                    return b.vol - a.vol;
+                } else if (sortOption === 'changeDesc') {
+                    return b.change - a.change;
+                }
+                return 0;
+            });
+
+            document.getElementById('resultCountBadge').innerText = `${filteredResults.length} kết quả`;
+            renderTable();
+        }
+
+        function renderTable() {
+            let tbody = document.getElementById('scannerTableBody');
+            if (filteredResults.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="py-10 text-center text-mexc-muted">Không tìm thấy kết quả nào thỏa mãn điều kiện.</td></tr>`;
+                return;
+            }
+
+            let html = '';
+            filteredResults.forEach(item => {
+                let agoText = item.candlesAgo === 0 ? '<span class="text-emerald-400 font-extrabold">0 nến (Live)</span>' : `Cách ${item.candlesAgo} nến`;
+                let badgeClass = item.candlesAgo === 0 ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50' : 'bg-sky-500/20 text-sky-300 border-sky-500/40';
+
+                let tvBinanceLink = `https://www.tradingview.com/chart/?symbol=BINANCE:${item.rawSymbol}.P`;
+                let tvMexcLink = `https://www.tradingview.com/chart/?symbol=MEXC:${item.rawSymbol}.P`;
+
+                html += `
+                    <tr class="hover:bg-mexc-hover/60 border-b border-mexc-border/40 whitespace-nowrap">
+                        <td class="py-2.5 px-3 sm:py-3 sm:px-4 font-bold text-white">${item.symbol}</td>
+                        <td class="py-2.5 px-3 sm:py-3 sm:px-4 font-mono">$${item.price.toFixed(4)}</td>
+                        <td class="py-2.5 px-3 sm:py-3 sm:px-4 font-mono ${item.change >= 0 ? 'text-mexc-bull' : 'text-mexc-bear'}">${item.change >= 0 ? '+' : ''}${item.change.toFixed(2)}%</td>
+                        <td class="py-2.5 px-3 sm:py-3 sm:px-4 text-center">
+                            <span class="border text-[11px] sm:text-xs px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full font-bold ${badgeClass}">
+                                ${currentScannedTf} (${agoText})
+                            </span>
+                        </td>
+                        <td class="py-2.5 px-3 sm:py-3 sm:px-4 text-right font-mono text-xs text-mexc-muted">${(item.vol / 1e6).toFixed(2)}M</td>
+                        <td class="py-2.5 px-3 sm:py-3 sm:px-4 text-center hide-on-capture">
+                            <div class="flex flex-row items-center justify-center gap-1.5">
+                                <a href="${tvBinanceLink}" target="_blank" class="px-2 py-1 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 rounded-md text-[11px] font-medium inline-flex items-center gap-1 transition">
+                                    <i class="fa-solid fa-chart-line text-[10px]"></i> Binance
+                                </a>
+                                <a href="${tvMexcLink}" target="_blank" class="px-2 py-1 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 rounded-md text-[11px] font-medium inline-flex items-center gap-1 transition">
+                                    <i class="fa-solid fa-chart-line text-[10px]"></i> MEXC
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+            tbody.innerHTML = html;
+        }
+    </script>
+</body>
+</html>
