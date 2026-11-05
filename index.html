@@ -74,13 +74,19 @@
                     <button id="btnScan1H" onclick="startScan('1H')" class="w-full sm:w-auto px-2.5 py-2 bg-sky-600 hover:bg-sky-500 text-white font-bold rounded-lg transition-all text-xs flex items-center justify-center gap-1 shadow-md shadow-sky-600/20 active:scale-95">
                         <i class="fa-solid fa-play text-[10px]"></i> 1H
                     </button>
+                    <button id="btnScan2H" onclick="startScan('2H')" class="w-full sm:w-auto px-2.5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-lg transition-all text-xs flex items-center justify-center gap-1 shadow-md shadow-indigo-600/20 active:scale-95">
+                        <i class="fa-solid fa-play text-[10px]"></i> 2H
+                    </button>
                     <button id="btnScan4H" onclick="startScan('4H')" class="w-full sm:w-auto px-2.5 py-2 bg-amber-600 hover:bg-amber-500 text-white font-bold rounded-lg transition-all text-xs flex items-center justify-center gap-1 shadow-md shadow-amber-600/20 active:scale-95">
                         <i class="fa-solid fa-play text-[10px]"></i> 4H
                     </button>
                     <button id="btnScan1D" onclick="startScan('1D')" class="w-full sm:w-auto px-2.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg transition-all text-xs flex items-center justify-center gap-1 shadow-md shadow-emerald-600/20 active:scale-95">
                         <i class="fa-solid fa-play text-[10px]"></i> 1D
                     </button>
-                    <button id="btnStopScan" onclick="stopScan()" class="hidden col-span-3 sm:w-auto px-3 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 font-semibold rounded-lg transition text-xs flex items-center justify-center gap-1.5">
+                    <button id="btnScan1W" onclick="startScan('1W')" class="w-full sm:w-auto px-2.5 py-2 bg-fuchsia-600 hover:bg-fuchsia-500 text-white font-bold rounded-lg transition-all text-xs flex items-center justify-center gap-1 shadow-md shadow-fuchsia-600/20 active:scale-95">
+                        <i class="fa-solid fa-play text-[10px]"></i> 1W
+                    </button>
+                    <button id="btnStopScan" onclick="stopScan()" class="hidden col-span-full sm:w-auto px-3 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 font-semibold rounded-lg transition text-xs flex items-center justify-center gap-1.5">
                         <i class="fa-solid fa-xmark"></i> Dừng Quét
                     </button>
                 </div>
@@ -281,8 +287,10 @@
             let startTime = Date.now();
 
             let intervalParam = '1h'; // 1H
+            if (tf === '2H') intervalParam = '2h';
             if (tf === '4H') intervalParam = '4h';
             if (tf === '1D') intervalParam = '1d';
+            if (tf === '1W') intervalParam = '1w';
 
             for (let i = 0; i < allSymbols.length; i++) {
                 if (shouldStopScan) break;
